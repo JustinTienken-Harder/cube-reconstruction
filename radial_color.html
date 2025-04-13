@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cube Rotation Color Transformer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .image-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .image-box {
+            width: 48%;
+            text-align: center;
+        }
+        .image-box img {
+            max-width: 100%;
+            max-height: 300px;
+            border: 1px solid #ddd;
+        }
+        .rotation-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        .rotation-button {
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            text-align: center;
+        }
+        .rotation-button:hover {
+            background-color: #e0e0e0;
+        }
+        .rotation-button.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .controls {
+            margin: 20px 0;
+            width: 100%;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cube Rotation Color Transformer</h1>
+        <p>Upload an image and see how different cube rotations affect the colors.</p>
+        
+        <div class="controls">
+            <input type="file" id="imageUpload" accept="image/*">
+            <button id="useDefaultImage">Use Default Image</button>
+            <div>
+                <label for="epsilonValue">Epsilon value (0.1-2.0): </label>
+                <input type="range" id="epsilonValue" min="0.1" max="2.0" step="0.05" value="0.85">
+                <span id="epsilonDisplay">0.85</span>
+            </div>
+            <div>
+                <label for="rbfChoice">RBF Function: </label>
+                <select id="rbfChoice">
+                    <option value="gaussian" selected>Gaussian</option>
+                    <option value="linear">Linear</option>
+                    <option value="cubic">Cubic</option>
+                    <option value="quintic">Quintic</option>
+                    <option value="inverse_quadratic">Inverse Quadratic</option>
+                    <option value="mq">Multiquadric</option>
+                    <option value="thin_plate">Thin Plate</option>
+                    <option value="imq">Inverse Multiquadric</option>
+                    <option value="bump">Bump</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="image-container">
+            <div class="image-box">
+                <h3>Original Image</h3>
+                <img id="originalImage" src="" alt="Original image will appear here">
+            </div>
+            <div class="image-box">
+                <h3>Transformed Image</h3>
+                <img id="transformedImage" src="" alt="Transformed image will appear here">
+            </div>
+        </div>
+        
+        <h3>Select a Cube Rotation</h3>
+        <div class="rotation-grid" id="rotations">
+            <!-- Rotation buttons will be added here via JavaScript -->
+        </div>
+        
+        <div class="loading" id="loadingIndicator">
+            Processing image... This may take a moment.
+        </div>
+    </div>
+
+    <script>
+        // Define the cube faces and orientations
+        const FACES = ['U', 'R', 'F', 'D', 'L', 'B'];
+        const ORIENTATION_MAPS = {
+            'UR': {'U': 'U', 'F': 'R', 'L': 'F', 'D': 'D', 'B': 'L', 'R': 'B'}, 
+            'UF': {'U': 'U', 'R': 'R', 'F': 'F', 'D': 'D', 'L': 'L', 'B': 'B'}, 
+            'UL': {'U': 'U', 'B': 'R', 'R': 'F', 'D': 'D', 'F': 'L', 'L': 'B'}, 
+            'UB': {'U': 'U', 'L': 'R', 'B': 'F', 'D': 'D', 'R': 'L', 'F': 'B'}, 
+            'RU': {'F': 'U', 'U': 'R', 'R': 'F', 'B': 'D', 'D': 'L', 'L': 'B'}, 
+            'RF': {'L': 'U', 'U': 'R', 'F': 'F', 'R': 'D', 'D': 'L', 'B': 'B'}, 
+            'RD': {'B': 'U', 'U': 'R', 'L': 'F', 'F': 'D', 'D': 'L', 'R': 'B'}, 
+            'RB': {'R': 'U', 'U': 'R', 'B': 'F', 'L': 'D', 'D': 'L', 'F': 'B'}, 
+            'FU': {'D': 'U', 'F': 'R', 'R': 'F', 'U': 'D', 'B': 'L', 'L': 'B'}, 
+            'FR': {'R': 'U', 'F': 'R', 'U': 'F', 'L': 'D', 'B': 'L', 'D': 'B'}, 
+            'FD': {'B': 'U', 'R': 'R', 'U': 'F', 'F': 'D', 'L': 'L', 'D': 'B'}, 
+            'FL': {'L': 'U', 'B': 'R', 'U': 'F', 'R': 'D', 'F': 'L', 'D': 'B'}, 
+            'DR': {'D': 'U', 'F': 'R', 'R': 'F', 'U': 'D', 'B': 'L', 'L': 'B'}, 
+            'DF': {'D': 'U', 'L': 'R', 'F': 'F', 'U': 'D', 'R': 'L', 'B': 'B'}, 
+            'DL': {'D': 'U', 'B': 'R', 'L': 'F', 'U': 'D', 'F': 'L', 'R': 'B'}, 
+            'DB': {'D': 'U', 'R': 'R', 'B': 'F', 'U': 'D', 'L': 'L', 'F': 'B'}, 
+            'LU': {'F': 'U', 'D': 'R', 'L': 'F', 'B': 'D', 'U': 'L', 'R': 'B'}, 
+            'LF': {'R': 'U', 'D': 'R', 'F': 'F', 'L': 'D', 'U': 'L', 'B': 'B'}, 
+            'LD': {'B': 'U', 'D': 'R', 'R': 'F', 'F': 'D', 'U': 'L', 'L': 'B'}, 
+            'LB': {'L': 'U', 'D': 'R', 'B': 'F', 'R': 'D', 'U': 'L', 'F': 'B'}, 
+            'BU': {'F': 'U', 'R': 'R', 'D': 'F', 'B': 'D', 'L': 'L', 'U': 'B'}, 
+            'BR': {'L': 'U', 'F': 'R', 'D': 'F', 'R': 'D', 'B': 'L', 'U': 'B'}, 
+            'BD': {'B': 'U', 'L': 'R', 'D': 'F', 'F': 'D', 'R': 'L', 'U': 'B'}, 
+            'BL': {'R': 'U', 'B': 'R', 'D': 'F', 'L': 'D', 'F': 'L', 'U': 'B'}
+        };
+
+        let originalImage = null;
+        let originalImageData = null;
+        
+        // Initialize the UI
+        document.addEventListener('DOMContentLoaded', function() {
+            // Populate rotation buttons
+            const rotationsContainer = document.getElementById('rotations');
+            for (const orientation in ORIENTATION_MAPS) {
+                const button = document.createElement('div');
+                button.className = 'rotation-button';
+                button.textContent = orientation;
+                button.dataset.orientation = orientation;
+                button.addEventListener('click', function() {
+                    applyRotation(orientation);
+                    
+                    // Update active state
+                    document.querySelectorAll('.rotation-button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                });
+                rotationsContainer.appendChild(button);
+            }
+            
+            // Setup image upload
+            document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
+            
+            // Setup default image button
+            document.getElementById('useDefaultImage').addEventListener('click', loadDefaultImage);
+            
+            // Setup epsilon slider
+            const epsilonSlider = document.getElementById('epsilonValue');
+            const epsilonDisplay = document.getElementById('epsilonDisplay');
+            epsilonSlider.addEventListener('input', function() {
+                epsilonDisplay.textContent = this.value;
+                if (originalImage) {
+                    const activeButton = document.querySelector('.rotation-button.active');
+                    if (activeButton) {
+                        applyRotation(activeButton.dataset.orientation);
+                    }
+                }
+            });
+            
+            // Setup RBF choice change
+            document.getElementById('rbfChoice').addEventListener('change', function() {
+                if (originalImage) {
+                    const activeButton = document.querySelector('.rotation-button.active');
+                    if (activeButton) {
+                        applyRotation(activeButton.dataset.orientation);
+                    }
+                }
+            });
+            
+            // Load default image on start
+            loadDefaultImage();
+        });
+
+        function loadDefaultImage() {
+            fetch('data/SEI_228697583.webp')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Default image not found');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    originalImage = new Image();
+                    originalImage.onload = function() {
+                        document.getElementById('originalImage').src = url;
+                        document.getElementById('transformedImage').src = '';
+                        
+                        // Create a canvas to get image data
+                        const canvas = document.createElement('canvas');
+                        canvas.width = originalImage.width;
+                        canvas.height = originalImage.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(originalImage, 0, 0);
+                        originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    };
+                    originalImage.src = url;
+                })
+                .catch(error => {
+                    console.error('Error loading default image:', error);
+                    alert('Could not load default image. Make sure it exists at the specified path.');
+                });
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    originalImage = new Image();
+                    originalImage.onload = function() {
+                        document.getElementById('originalImage').src = e.target.result;
+                        document.getElementById('transformedImage').src = '';
+                        
+                        // Create a canvas to get image data
+                        const canvas = document.createElement('canvas');
+                        canvas.width = originalImage.width;
+                        canvas.height = originalImage.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(originalImage, 0, 0);
+                        originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    };
+                    originalImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function applyRotation(orientation) {
+            if (!originalImage || !originalImageData) {
+                alert('Please upload or select an image first.');
+                return;
+            }
+            
+            document.getElementById('loadingIndicator').style.display = 'block';
+            
+            // Use setTimeout to allow the UI to update before heavy processing
+            setTimeout(() => {
+                const map = ORIENTATION_MAPS[orientation];
+                const epsilon = parseFloat(document.getElementById('epsilonValue').value);
+                const rbfChoice = document.getElementById('rbfChoice').value;
+                
+                const operatorData = createColorPermutationOperator(map, rbfChoice, epsilon);
+                if (operatorData) {
+                    const transformedImageData = applyOperatorToImage(originalImageData, operatorData);
+                    displayTransformedImage(transformedImageData);
+                }
+                
+                document.getElementById('loadingIndicator').style.display = 'none';
+            }, 50);
+        }
+
+        function createColorPermutationOperator(map, rbfChoice = "gaussian", epsilon = 0.85) {
+            // Define the colors
+            const colors = {
+                "U": [1, 1, 1],     // White
+                "R": [1, 0, 0],     // Red
+                "F": [0, 1, 0],     // Green
+                "D": [1, 1, 0],     // Yellow
+                "L": [1, 0.65, 0],  // Orange
+                "B": [0, 0, 1]      // Blue
+            };
+            
+            const inputColors = FACES.map(face => colors[face]);
+            inputColors.push([0, 0, 0]); // Add black as an additional point
+            
+            const targetColors = FACES.map(face => colors[map[face]]);
+            targetColors.push([0, 0, 0]); // Keep black as black
+            
+            // Choose RBF function
+            const rbf = getRbfFunction(rbfChoice, epsilon);
+            
+            // Calculate the distance matrix
+            const numPoints = inputColors.length;
+            const distanceMatrix = Array(numPoints).fill().map(() => Array(numPoints).fill(0));
+            
+            for (let i = 0; i < numPoints; i++) {
+                for (let j = 0; j < numPoints; j++) {
+                    distanceMatrix[i][j] = euclideanDistance(inputColors[i], inputColors[j]);
+                }
+            }
+            
+            // Form matrix A (apply RBF to distances)
+            const A = distanceMatrix.map(row => row.map(val => rbf(val)));
+            
+            // Solve for weights (A * W = C_prime)
+            try {
+                const weights = solveLinearSystem(A, targetColors);
+                return { inputColors, weights, rbf };
+            } catch (error) {
+                console.error("Error solving linear system:", error);
+                alert("Could not create the color transformation operator.");
+                return null;
+            }
+        }
+
+        function getRbfFunction(choice, epsilon) {
+            switch (choice) {
+                case "gaussian":
+                    return r => Math.exp(-Math.pow(r/epsilon, 2));
+                case "linear":
+                    return r => r;
+                case "cubic":
+                    return r => Math.pow(r, 3);
+                case "quintic":
+                    return r => Math.pow(r, 5);
+                case "inverse_quadratic":
+                    return r => 1/(1 + Math.pow(r*epsilon, 2));
+                case "mq":
+                    return r => Math.sqrt(1 + Math.pow(r/epsilon, 2));
+                case "thin_plate":
+                    return r => r > 1e-10 ? r * Math.log(r) : 0;
+                case "imq":
+                    return r => 1/Math.sqrt(1 + Math.pow(r/epsilon, 2));
+                case "bump":
+                    return r => r < epsilon ? Math.exp(-1/(1 - Math.pow(r/epsilon, 2))) : 0;
+                default:
+                    return r => Math.exp(-Math.pow(r/epsilon, 2)); // Default to gaussian
+            }
+        }
+
+        function euclideanDistance(p1, p2) {
+            return Math.sqrt(
+                Math.pow(p1[0] - p2[0], 2) + 
+                Math.pow(p1[1] - p2[1], 2) + 
+                Math.pow(p1[2] - p2[2], 2)
+            );
+        }
+
+        function solveLinearSystem(A, b) {
+            // Using simple Gaussian elimination for small matrices (6x6)
+            // For production use, consider using a numerical library
+            const n = A.length;
+            const augmentedMatrix = A.map((row, i) => [...row, b[i][0], b[i][1], b[i][2]]);
+            
+            // Gaussian elimination
+            for (let i = 0; i < n; i++) {
+                // Find the maximum element in the current column
+                let maxRowIndex = i;
+                for (let j = i + 1; j < n; j++) {
+                    if (Math.abs(augmentedMatrix[j][i]) > Math.abs(augmentedMatrix[maxRowIndex][i])) {
+                        maxRowIndex = j;
+                    }
+                }
+                
+                // Swap the rows
+                if (maxRowIndex !== i) {
+                    [augmentedMatrix[i], augmentedMatrix[maxRowIndex]] = 
+                    [augmentedMatrix[maxRowIndex], augmentedMatrix[i]];
+                }
+                
+                // Make all rows below this one have a 0 in this column
+                for (let j = i + 1; j < n; j++) {
+                    const factor = augmentedMatrix[j][i] / augmentedMatrix[i][i];
+                    for (let k = i; k < n + 3; k++) {
+                        augmentedMatrix[j][k] -= factor * augmentedMatrix[i][k];
+                    }
+                }
+            }
+            
+            // Back substitution
+            const weights = Array(n).fill().map(() => Array(3).fill(0));
+            for (let i = n - 1; i >= 0; i--) {
+                for (let c = 0; c < 3; c++) {
+                    let sum = augmentedMatrix[i][n + c];
+                    for (let j = i + 1; j < n; j++) {
+                        sum -= augmentedMatrix[i][j] * weights[j][c];
+                    }
+                    weights[i][c] = sum / augmentedMatrix[i][i];
+                }
+            }
+            
+            return weights;
+        }
+
+        function applyOperatorToImage(imageData, operatorData) {
+            const { inputColors, weights, rbf } = operatorData;
+            const { data, width, height } = imageData;
+            
+            // Create a new ImageData for the result
+            const transformedData = new ImageData(width, height);
+            
+            // Process each pixel
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i] / 255;
+                const g = data[i + 1] / 255;
+                const b = data[i + 2] / 255;
+                const pixel = [r, g, b];
+                
+                // Calculate distances to input colors
+                const distances = inputColors.map(color => euclideanDistance(color, pixel));
+                
+                // Apply RBF
+                const rbfValues = distances.map(rbf);
+                
+                // Matrix multiplication with weights
+                let newR = 0, newG = 0, newB = 0;
+                for (let j = 0; j < rbfValues.length; j++) {
+                    newR += rbfValues[j] * weights[j][0];
+                    newG += rbfValues[j] * weights[j][1];
+                    newB += rbfValues[j] * weights[j][2];
+                }
+                
+                // Clip values to [0, 1] range and scale back to [0, 255]
+                transformedData.data[i]     = Math.min(255, Math.max(0, Math.round(newR * 255)));
+                transformedData.data[i + 1] = Math.min(255, Math.max(0, Math.round(newG * 255)));
+                transformedData.data[i + 2] = Math.min(255, Math.max(0, Math.round(newB * 255)));
+                transformedData.data[i + 3] = data[i + 3]; // Keep original alpha
+            }
+            
+            return transformedData;
+        }
+
+        function displayTransformedImage(imageData) {
+            const canvas = document.createElement('canvas');
+            canvas.width = imageData.width;
+            canvas.height = imageData.height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+            
+            const dataUrl = canvas.toDataURL();
+            document.getElementById('transformedImage').src = dataUrl;
+        }
+    </script>
+</body>
+</html>

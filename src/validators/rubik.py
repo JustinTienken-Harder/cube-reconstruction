@@ -271,7 +271,7 @@ class RubiksCube(Symmetries):
         Args:
             move_sequence (str): A space-separated string of moves (e.g., "R U R'").
         """
-        moves = move_sequence.split()
+        moves = move_sequence.split(" ")
         for move in moves:
             state = self.turn(move, state)
 

@@ -37,6 +37,30 @@ class Symmetries:
     }
     BASE_ROTATIONS = ["x", "y", "z"]
     SINGLE_ROTATIONS = BASE_ROTATIONS + [x+"'" for x in BASE_ROTATIONS] + [x+"2" for x in BASE_ROTATIONS]
+    ORIENTATION_MAPS = {'UR': {'U': 'U', 'F': 'R', 'L': 'F', 'D': 'D', 'B': 'L', 'R': 'B'}, 
+                        'UF': {'U': 'U', 'R': 'R', 'F': 'F', 'D': 'D', 'L': 'L', 'B': 'B'}, 
+                        'UL': {'U': 'U', 'B': 'R', 'R': 'F', 'D': 'D', 'F': 'L', 'L': 'B'}, 
+                        'UB': {'U': 'U', 'L': 'R', 'B': 'F', 'D': 'D', 'R': 'L', 'F': 'B'}, 
+                        'RU': {'F': 'U', 'U': 'R', 'R': 'F', 'B': 'D', 'D': 'L', 'L': 'B'}, 
+                        'RF': {'L': 'U', 'U': 'R', 'F': 'F', 'R': 'D', 'D': 'L', 'B': 'B'}, 
+                        'RD': {'B': 'U', 'U': 'R', 'L': 'F', 'F': 'D', 'D': 'L', 'R': 'B'}, 
+                        'RB': {'R': 'U', 'U': 'R', 'B': 'F', 'L': 'D', 'D': 'L', 'F': 'B'}, 
+                        'FU': {'D': 'U', 'F': 'R', 'R': 'F', 'U': 'D', 'B': 'L', 'L': 'B'}, 
+                        'FR': {'R': 'U', 'F': 'R', 'U': 'F', 'L': 'D', 'B': 'L', 'D': 'B'}, 
+                        'FD': {'B': 'U', 'R': 'R', 'U': 'F', 'F': 'D', 'L': 'L', 'D': 'B'}, 
+                        'FL': {'L': 'U', 'B': 'R', 'U': 'F', 'R': 'D', 'F': 'L', 'D': 'B'}, 
+                        'DR': {'D': 'U', 'F': 'R', 'R': 'F', 'U': 'D', 'B': 'L', 'L': 'B'}, 
+                        'DF': {'D': 'U', 'L': 'R', 'F': 'F', 'U': 'D', 'R': 'L', 'B': 'B'}, 
+                        'DL': {'D': 'U', 'B': 'R', 'L': 'F', 'U': 'D', 'F': 'L', 'R': 'B'}, 
+                        'DB': {'D': 'U', 'R': 'R', 'B': 'F', 'U': 'D', 'L': 'L', 'F': 'B'}, 
+                        'LU': {'F': 'U', 'D': 'R', 'L': 'F', 'B': 'D', 'U': 'L', 'R': 'B'}, 
+                        'LF': {'R': 'U', 'D': 'R', 'F': 'F', 'L': 'D', 'U': 'L', 'B': 'B'}, 
+                        'LD': {'B': 'U', 'D': 'R', 'R': 'F', 'F': 'D', 'U': 'L', 'L': 'B'}, 
+                        'LB': {'L': 'U', 'D': 'R', 'B': 'F', 'R': 'D', 'U': 'L', 'F': 'B'}, 
+                        'BU': {'F': 'U', 'R': 'R', 'D': 'F', 'B': 'D', 'L': 'L', 'U': 'B'}, 
+                        'BR': {'L': 'U', 'F': 'R', 'D': 'F', 'R': 'D', 'B': 'L', 'U': 'B'}, 
+                        'BD': {'B': 'U', 'L': 'R', 'D': 'F', 'F': 'D', 'R': 'L', 'U': 'B'}, 
+                        'BL': {'R': 'U', 'B': 'R', 'D': 'F', 'L': 'D', 'F': 'L', 'U': 'B'}}
     FACES = ['U', 'R', 'F', 'D', 'L', 'B'] # Standard cube faces
 
 
@@ -55,6 +79,7 @@ class Symmetries:
         permutation.update({x+"'": y[::-1] for x, y in permutation.items()}) # Add inverses
         #start with identity
         self._reorient = {"I": {x: x for x in self.FACES}}
+        self._reorient[""] = self._reorient["I"]
         # Do base and inverse rotations
         for rotation in rotations:
             shift = {x: x for x in self.FACES} #start with identity
@@ -134,6 +159,22 @@ class Symmetries:
             permute = self._reorient[rotation]
             faces_to_permute = [permute[face] for face in faces_to_permute]
         return faces_to_permute
+    
+    @staticmethod
+    def get_canonical_orientation(self, state):
+        s = state
+        centers = s[4:54:9]
+        canon = Symmetries.FACES[centers.index("U")] + Symmetries.FACES[centers.index("F")]
+        return canon
+    
+    def get_canon_rotated_state(self, state):
+        """Rotate the cube into canonical orientation preserving
+        the permutation structure of the cube"""
+        s = state
+        canon = self.get_canonical_orientation(s)
+        perm_map = self._orientations[canon]
+        rotated_state = "".join(perm_map[x] for x in s)
+        return rotated_state
     
     def rotate_state(self, rotation_str, state):
         orientation = self.notation_to_orientation(rotation_str)

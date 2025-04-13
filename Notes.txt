@@ -1,0 +1,3 @@
+## There is the case that people have non-standard color schemes
+We need to incorporate a proper loss/methods to account for different color schemes
+This may mean things should be relative to centers?
