@@ -1,5 +1,3 @@
-from validators.symmetries import Symmetries
-
 
 class CornerValidate:
     """
@@ -10,7 +8,7 @@ class CornerValidate:
     FACES = "URFDLB"
     CORNERS = ['URF', 'UFL', 'ULB', 'UBR', 'DFR', 'DLF', 'DBL', 'DRB']
     @staticmethod
-    def get_valid_corners(self, state_string):
+    def get_valid_corners(state_string):
         """This method extracts the valid corner pieces from the cube string. 
         Compares this to the corners in the string"""
         centers = state_string[4:54:9]
