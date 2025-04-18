@@ -272,8 +272,15 @@ class RubiksCube(Symmetries):
             move_sequence (str): A space-separated string of moves (e.g., "R U R'").
         """
         moves = move_sequence.split(" ")
+        moves = [m for m in moves if m]
+        final_update = state is None
         for move in moves:
             state = self.turn(move, state)
+        if final_update:
+            self.state = state
+        return state
+        
+
 
     def turn(self, move, state=None):
         """
