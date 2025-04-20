@@ -1,4 +1,3 @@
-
 class CornerValidate:
     """
     This class is used to validate the corner pieces of the cube string:
@@ -273,9 +272,11 @@ class ValidateState:
     def corner_orientation(self, s):
         pass
 
+def print_assist():
+    pass 
 
 if __name__ == "__main__":
-    from validators.rubik import RubiksCube
+    from rubik.rubik import RubiksCube
     
     # Initialize our validator
     validator = CornerValidate()
@@ -355,12 +356,13 @@ if __name__ == "__main__":
     print(f"  - Valid corner orientations: {total_orientation == 0}")
 
     print("\n> Invalid Corners")
+    print("  - Manually twisted corner (invalid)")
     cube.reset()
     invalid_state = list(cube.get_state_string())
     
     # Twist a corner (swap URF stickers)
-    urf_indices = [1+9, 2+18]  # Example indices, adjust as needed
-    invalid_state[urf_indices[0]], invalid_state[urf_indices[1]] = invalid_state[urf_indices[1]], invalid_state[urf_indices[0]]
+    ubl_indices = [0, 0+9*4, 2+9*5]  # URF corner indices
+    invalid_state[ubl_indices[0]], invalid_state[ubl_indices[1]], invalid_state[ubl_indices[2]] = invalid_state[ubl_indices[2]], invalid_state[ubl_indices[0]], invalid_state[ubl_indices[1]]
     invalid_state = "".join(invalid_state)
     # Analyze the invalid state
     corners = validator.get(invalid_state)
@@ -374,7 +376,25 @@ if __name__ == "__main__":
     print(f"  - Corner parity: {parity}")
     print(f"  - Total orientation (mod 3): {total_orientation}")
     print(f"  - Valid corner orientations: {total_orientation == 0}")
-    
+
+    # Test swapped stickers: 
+    print("   - Manually swapped stickers (invalid)")
+    cube.reset()
+    invalid_state = list(cube.get_state_string())
+    urf_indices = [1+9, 2+18]  # Example indices, adjust as needed
+    invalid_state[urf_indices[0]], invalid_state[urf_indices[1]] = invalid_state[urf_indices[1]], invalid_state[urf_indices[0]]
+    invalid_state = "".join(invalid_state)
+    # Analyze the invalid state
+    corners = validator.get(invalid_state)
+    permutation = validator.permutation(corners, invalid_state)
+    parity = validator.parity(permutation)
+    orientations = validator.orientation(corners, invalid_state)
+    total_orientation = validator.get_total_orientation(corners, invalid_state)
+    print(f"  - Corner orientations: {orientations}")
+    print(f"  - Corner permutation: {permutation}")
+    print(f"  - Corner parity: {parity}")
+    print(f"  - Total orientation (mod 3): {total_orientation}")
+    print(f"  - Valid corner orientations: {total_orientation == 0}")
     # 3. Test edge-corner parity match
     print("\n=== Testing Corner-Edge Parity Match ===")
     
@@ -389,6 +409,8 @@ if __name__ == "__main__":
     
     print(f"> T-perm (valid algorithm)")
     print(f"  - Corner parity: {'Even' if corner_parity == 0 else 'Odd'}")
+    print(f"  - Corner permutation: {permutation}")
+    print(f"  - Corner orientations: {validator.orientation(corners, t_perm_state)}")
     
     # Usually you'd check edge parity here too and verify they match
     # print(f"  - Edge parity: {'Even' if edge_parity == 0 else 'Odd'}")

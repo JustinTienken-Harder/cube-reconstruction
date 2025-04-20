@@ -1,5 +1,5 @@
 import pytest
-from src.validators.rubik import RubiksCube  # Adjust the import path as needed
+from src.rubikrubik import RubiksCube  # Adjust the import path as needed
 
 
 
@@ -12,7 +12,7 @@ class TestRubiksCubeState:
     def test_initial_state(self):
         # Verify specific stickers moved to expected positions
         # Example: checking specific state elements after U move
-        expected_state = 'UUUUUUUUUBBBRRRRRRRRRFFFFFFDDDDDDDDDFFFLLLLLLLLLBBBBBB'  # Replace with actual expected values
+        expected_state = self.solved_state  # Replace with actual expected values
         assert self.cube.get_state_string() == expected_state
         assert self.cube.is_solved() is True
     

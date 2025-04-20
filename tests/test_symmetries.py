@@ -1,7 +1,8 @@
 import pytest
-from src.validators.symmetries import Symmetries  # Adjust the import path as needed
+from src.rubiksymmetries import Symmetries  # Adjust the import path as needed
 
-class TestRubiksCubeState:
+
+class TestSymmetries:
     def setup_method(self):
         """Set up a fresh cube instance for each test"""
         self.sym = Symmetries()

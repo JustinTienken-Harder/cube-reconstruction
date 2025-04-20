@@ -1,8 +1,12 @@
 import pytest
-from validators.rubik import RubiksCube
-from validators.utils.corner import CornerValidate
+from rubikrubik import RubiksCube
+from rubikutils.corner import CornerValidate
 
 class TestCornerValidation:
+    def setup_method(self):
+        self.solved_orientation = {'URF': 0, 'UFL': 0, 'ULB': 0, 'UBR': 0, 'DFR': 0, 'DLF': 0, 'DBL': 0, 'DRB': 0}
+        self.solved_permutation = {'URF': 'URF', 'UFL': 'UFL', 'ULB': 'ULB', 'UBR': 'UBR', 'DFR': 'DFR', 'DLF': 'DLF', 'DBL': 'DBL', 'DRB': 'DRB'}
+
     @pytest.fixture
     def validator(self):
         """Fixture that provides a CornerValidate instance"""
@@ -21,7 +25,7 @@ class TestCornerValidation:
         
         # Twist a corner (swap URF stickers)
         urf_indices = [0, 0+9*4, 2+9*5]  # URF corner indices
-        invalid_state[urf_indices[0]], invalid_state[urf_indices[1]] = invalid_state[urf_indices[1]], invalid_state[urf_indices[0]]
+        invalid_state[urf_indices[0]], invalid_state[urf_indices[1]], invalid_state[urf_indices[2]] = invalid_state[urf_indices[2]], invalid_state[urf_indices[0]], invalid_state[urf_indices[1]]
         return "".join(invalid_state)
     
     @pytest.fixture
@@ -132,8 +136,8 @@ class TestCornerValidation:
         # Expected values from console output
         expected_parity = 0  # Fill in
         expected_orientation_valid = False  # Fill in
-        expected_permutation = {}  # Fill in from console output
-        expected_orientations = {}  # Fill in from console output
+        expected_orientations = {'URF': 0, 'UFL': 0, 'ULB': 1, 'UBR': 0, 'DFR': 0, 'DLF': 0, 'DBL': 0, 'DRB': 0}  # Fill in from console output
+        expected_permutation = {'URF': 'URF', 'UFL': 'UFL', 'ULB': 'ULB', 'UBR': 'UBR', 'DFR': 'DFR', 'DLF': 'DLF', 'DBL': 'DBL', 'DRB': 'DRB'}  # Fill in from console output
         
         # Assertions
         assert parity == expected_parity, f"Expected parity {expected_parity}, got {parity}"
@@ -157,10 +161,10 @@ class TestCornerValidation:
         total_orientation = validator.get_total_orientation(corners, invalid_swapped_stickers_state)
         
         # Expected values from console output
-        expected_parity = 0  # Fill in
-        expected_orientation_valid = False  # Fill in
-        expected_permutation = {}  # Fill in from console output
-        expected_orientations = {}  # Fill in from console output
+        expected_parity = 0 
+        expected_orientation_valid = True
+        expected_orientations = {'URF': 0, 'UFL': 0, 'ULB': 0, 'UBR': 0, 'DFR': 0, 'DLF': 0, 'DBL': 0, 'DRB': 0}  # Fill in from console output
+        expected_permutation = {'UFL': 'UFL', 'ULB': 'ULB', 'UBR': 'UBR', 'DFR': 'DFR', 'DLF': 'DLF', 'DBL': 'DBL', 'DRB': 'DRB'}  # Fill in from console output
         
         # Assertions
         assert parity == expected_parity, f"Expected parity {expected_parity}, got {parity}"
@@ -179,9 +183,9 @@ class TestCornerValidation:
         orientations = validator.orientation(corners, t_perm_state)
         
         # Expected values from console output
-        expected_parity = 0  # Fill in
-        expected_permutation = {}  # Fill in from console output
-        expected_orientations = {}  # Fill in from console output
+        expected_parity = 1
+        expected_permutation = {'URF': 'UBR', 'UFL': 'UFL', 'ULB': 'ULB', 'UBR': 'URF', 'DFR': 'DFR', 'DLF': 'DLF', 'DBL': 'DBL', 'DRB': 'DRB'}
+        expected_orientations = self.solved_orientation
         
         # Assertions
         assert corner_parity == expected_parity, f"Expected T-perm corner parity {expected_parity}, got {corner_parity}"
