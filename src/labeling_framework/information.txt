@@ -1,0 +1,38 @@
+I need a labelling framework to annotate videos of Rubik's cubers solving a rubiks cube.
+
+The goal of the project is to build a machine learning system that takes a raw video in (that can contain multiple solves),
+and output the following information:
+1. The starting state of the cube (all the sticker locations) to be fed into a solver, inverted to get the original scramble. 
+2. The reconstruction of the solve, a turn-by turn analysis of the moves the cuber applied to the cube.
+3. (vague) Breakdown of the time taken with each stage of the cube (cross/1st pair/2nd/3rd/4th pairs/OLL/PLL)
+
+This will be accomplished with three different models:
+1. Keypoint detection model. A model that takes a video and outputs timestamps of the keypoints in the video:
+ - Starting and End frames for the three stages: (optional) Scramble, Inspection, Solution
+
+2. Cube State model, a Vision Transformer model, that takes the inspection phase, and produces the starting state of the cube, as a 54x6 classifier of the 54 stickers and 6 colors of the cube.
+3. Reconsutruction Model, also a Vision transformer, that takes the solution phase, and produces the turns the cuber performed on the cube.
+
+There are many advantages to my framework and the problem:
+1. Solve Verifiability: Given a scramble we can validate if the solution model properly solves a cube
+2. Cube Constraints: In scramble phase, we can validate the outputs of the 54*6 model to be a valid Rubik's Cube,
+ through the validators submodule. We can produce losses of how wrong an output state is in numerical terms 
+ (corner/edge orientation/permutation losses, center losses, sticker losses), for a total of 4+1+1 = 6 total losses and constraints.
+ Further, we can pretrain a validator network, that that estimates our programmatic losses of cube state.
+ During pre-training of the Cube State model, we minimize cross-entropy losses of sticker predictions AND minimize the outputs of the validator network.  These produce continous, trainable loss functions. 
+3. Rotation Invariance of Rubik's Cube: 
+    Given a Scramble + Solution (results in Identity element in rubik's cube group),
+    then any of the 24 rotations of the cube applied before the scramble results in a valid identity element, i.e., rotation + scramble + solution = identity.
+    I exploit this knowledge by producing 24 color rotations in RGB space that permutes the Rubik's cube colors as if it was a cube rotation. 
+    This is a powerful data augmentation that takes my dataset of 9,000 Rubik's cube scrambles+solutions to over 216,000 scramble+solutions as
+    there are now 24 possible starting cube states instead of the original state.
+
+We shift our focus and attention to the labelling framework by making some notes about the raw data:
+
+The videos are either unofficial or at a competition.
+Unofficial:
+- Frequently
+
+- Data labelling cannot be accomplished in one sitting, so it must be stateful. It must keep track of data that we have already labelled. Shut down gracefully, and resume from where we have left off. 
+- Simple user interface to
+1. A simple UI that makes data labelling easy.

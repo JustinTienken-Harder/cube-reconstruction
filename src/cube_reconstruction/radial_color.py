@@ -1,7 +1,7 @@
 from PIL import Image
 import numpy as np
 from scipy.linalg import solve
-from validators.symmetries import Symmetries
+from rubiksymmetries import Symmetries
 
 def color_permutation_operator(map = None, rbf_choice = "gaussian", epsilon = 0.85):
     """
