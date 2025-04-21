@@ -1,5 +1,5 @@
 import pytest
-from src.rubikrubik import RubiksCube  # Adjust the import path as needed
+from src.rubik.cube import RubiksCube  # Adjust the import path as needed
 
 
 

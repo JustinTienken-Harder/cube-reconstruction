@@ -26,10 +26,49 @@ class StringManipulate:
         Returns:
             string: cleaned to canonical notation
         """
-        s = self.split_moves(notation_string)
-        s = [self.synonyms[i] if i in self.synonyms else i for i in s]
-        parsed_comm = self.parse_comm(" ".join(s))
-        return parsed_comm 
+        commentless = self.remove_comments(notation_string)
+        split = self.split_moves(commentless)
+        replaced = [self.synonyms[i] if i in self.synonyms else i for i in split]
+        parsed_comm = self.parse_comm(" ".join(replaced))
+        result = re.sub(r"\s+", ' ', parsed_comm).strip()
+        return result
+    
+    @staticmethod
+    def remove_comments(notation_string):
+        lines = notation_string.split("\n")
+        cleaned_lines = []
+        for line in lines:
+            # Remove comments (both styles)
+            comment_start_slash = line.find('\\')
+            comment_start_double = line.find('//')
+            
+            if comment_start_slash >= 0:
+                line = line[:comment_start_slash]
+            if comment_start_double >= 0:
+                line = line[:comment_start_double]
+                
+            if line.strip():  # Only keep non-empty lines
+                cleaned_lines.append(line)
+        # Join cleaned lines back together
+        return " ".join(cleaned_lines)
+    
+    @staticmethod
+    def clean_string(notation_string):
+        """
+        Cleans a Rubik's cube notation string by removing comments and extra whitespace.
+        
+        Args:
+            notation_string (str): The notation string to clean
+            
+        Returns:
+            str: Cleaned notation string
+        """
+        commentless = StringManipulate.remove_comments(notation_string)
+        as_list = StringManipulate.split_moves(commentless)
+        clean_string = " ".join(as_list)
+        
+        return clean_string
+    
     @staticmethod
     def split_moves(notation_string):
         """
@@ -46,21 +85,20 @@ class StringManipulate:
         Returns:
             list: List of individual moves
         """
-        # Remove any comments and extra whitespace
-        clean_string = re.sub(r'//.*', '', notation_string).strip()
         
-        # Define regex pattern for moves
+        # Define regex pattern for moves, commutator notation, and brackets
         # Matches:
         # - Standard face moves (RUFLDB)
         # - Wide moves (lowercase or w/W suffix)
         # - Slice moves (MES)
         # - Rotation moves (xyz)
         # - With optional ' or 2 modifier
-        pattern = r'([RUFLDBMESrufdbxyz][w|W]?[\'2]?)'
+        # - [ , : ]
+        pattern = r'([RUFLDBMESrufdbxyz][w|W]?[\'2]?|\[|\]|,|:)'
         
         # Find all matches
-        moves = re.findall(pattern, clean_string)
-    
+        moves = re.findall(pattern, notation_string)
+        
         return moves
     
 
@@ -78,6 +116,8 @@ class StringManipulate:
                 synonyms[i+"w"+j] = i.lower() + j
                 synonyms[i+j] = i + j
                 synonyms[i.lower()+j] = i.lower() + j
+                synonyms[i.lower()+"W"+j] = i.lower() + j
+                synonyms[i.lower()+"w"+j] = i.lower() + j
         rotations = ["x", "y", "z"]
         for i in rotations:
             for j in modifiers:
@@ -94,7 +134,7 @@ class StringManipulate:
         '''
         x = A.split(" ")
         x = [p for p in x if p != ""]
-        reformatted = [l+"'" if len(l) == 1 else l if "2" in l else l[0] for l in x]
+        reformatted = [chunk+"'" if len(chunk) == 1 else chunk if "2" in chunk else chunk[0] for chunk in x]
         reformatted = reformatted[::-1]
         return " ".join(reformatted)
 
@@ -143,7 +183,7 @@ if __name__ == "__main__":
             7 : "[R: [U R', U]]",
             4 : " F [R U: R' [x, y] F]",
             5 : "[ F R: [M', U2]] [[r: U], D2]",
-            6 : "[ F R: [[M', U2]: [[r:U], D2]]]"}
+            6 : "[ F R: [[M', U2]: [[r: U], D2]]]"}
     #print(wow[5])
     def io_verbose(func):
         def wrapper(s):
@@ -161,7 +201,16 @@ if __name__ == "__main__":
         print(StringManipulate.parse_comm(thingy) + "\n")
     str1 = "R U R' U R U2 R' RwUr' U' r x y R' U2 \\ This is a comment\nR2 U2 R' U2 R rwU'r"
     str2 = str1.replace(" ", "")
-    print(StringManipulate.split_moves(str1))
-    print(StringManipulate.split_moves(str2))
+    # print(StringManipulate.split_moves(str1))
+    # print(StringManipulate.split_moves(str2))
+    manipulator = StringManipulate()
+    weird_case = "[R U R', D] \\ Shitty situation \n [D2: [R U R', D]] \\ URF->LBD->BRD"
+    print(StringManipulate.split_moves(weird_case))
     #print(StringManipulate.inverse(str1))
+    joined = " ".join(StringManipulate.split_moves(weird_case))
+    print(joined)
+    print(manipulator(weird_case))
+    print(manipulator("[Rw: [U, R']] // This is a test"))
+    print(manipulator("[R,U]"))
+    print("Done")
     #'''

@@ -1,5 +1,5 @@
 import pytest
-from src.rubiksymmetries import Symmetries  # Adjust the import path as needed
+from src.rubik.symmetries import Symmetries  # Adjust the import path as needed
 
 
 class TestSymmetries:

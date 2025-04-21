@@ -1,6 +1,6 @@
 import pytest
-from rubikrubik import RubiksCube
-from rubikutils.corner import CornerValidate
+from rubik.cube import RubiksCube
+from rubik.utils.corner import CornerValidate
 
 class TestCornerValidation:
     def setup_method(self):

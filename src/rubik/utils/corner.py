@@ -276,7 +276,7 @@ def print_assist():
     pass 
 
 if __name__ == "__main__":
-    from rubik.rubik import RubiksCube
+    from rubik.cube import RubiksCube
     
     # Initialize our validator
     validator = CornerValidate()
